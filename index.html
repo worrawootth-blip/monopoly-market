@@ -253,6 +253,7 @@
     <option value="AMZN - Amazon"></option>
     <option value="META - Meta Platforms"></option>
   </datalist>
+  <datalist id="mixedStocks"></datalist>
 
   <script>
     const stockRows = document.getElementById("stockRows");
@@ -289,10 +290,22 @@
     }
 
     function applyDatalist() {
-      const listId = marketScope.value === "Thailand" ? "thaiStocks" : marketScope.value === "Global" ? "globalStocks" : "thaiStocks";
+      const listId = marketScope.value === "Thailand"
+        ? "thaiStocks"
+        : marketScope.value === "Global"
+          ? "globalStocks"
+          : "mixedStocks";
       document.querySelectorAll(".stock-name").forEach((input) => {
         input.setAttribute("list", listId);
       });
+    }
+
+    function buildMixedStockList() {
+      const mixed = document.getElementById("mixedStocks");
+      const thai = Array.from(document.querySelectorAll("#thaiStocks option")).map((o) => o.value);
+      const global = Array.from(document.querySelectorAll("#globalStocks option")).map((o) => o.value);
+      const merged = [...new Set([...thai, ...global])];
+      mixed.innerHTML = merged.map((name) => `<option value="${name}"></option>`).join("");
     }
 
     function classifyHHI(hhi) {
@@ -354,7 +367,7 @@
         {
           name: "Effective Number of Firms",
           value: effectiveFirms.toFixed(2),
-          level: badge(effectiveFirms < 3 ? "น้อยราย", effectiveFirms < 3 ? "#d93025" : "#0f9d58"),
+          level: badge(effectiveFirms < 3 ? "น้อยราย" : "หลายราย", effectiveFirms < 3 ? "#d93025" : "#0f9d58"),
           meaning: "จำนวนผู้เล่นเชิงประสิทธิผล (ค่ายิ่งต่ำ ตลาดยิ่งกระจุกตัว)"
         }
       ];
@@ -381,6 +394,12 @@
     }
 
     function renderCharts(labels, values) {
+      if (typeof Chart === "undefined") {
+        const box = document.getElementById("analysisBox");
+        box.innerHTML += "<br><span style='color:#d93025'><strong>ไม่สามารถแสดงกราฟได้:</strong> Chart.js โหลดไม่สำเร็จ</span>";
+        return;
+      }
+
       if (pieChart) pieChart.destroy();
       if (barChart) barChart.destroy();
 
@@ -437,6 +456,7 @@
     document.getElementById("resetBtn").addEventListener("click", resetAll);
     marketScope.addEventListener("change", applyDatalist);
 
+    buildMixedStockList();
     resetAll();
   </script>
 </body>
