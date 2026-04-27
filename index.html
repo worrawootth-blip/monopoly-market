@@ -1,224 +1,443 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <title>Market Concentration Report with Standards</title>
-    <script src="https://cdn.jsdelivr.net"></script>
-    <script src="https://cdnjs.cloudflare.com"></script>
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
-    <style>
-        body { font-family: 'Sarabun', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        .input-card { background: #fff; border: 2px solid #e9ecef; padding: 25px; border-radius: 10px; margin-bottom: 30px; }
-        .row { display: flex; gap: 12px; margin-bottom: 12px; }
-        input, select { flex: 1; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 15px; }
-        button { cursor: pointer; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
-        .btn-calc { background: #2ecc71; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
-        .btn-add { background: #3498db; color: white; }
-        
-        /* สไตล์ตารางรายงานผล */
-        .report-table, .criteria-table { width: 100%; border-collapse: collapse; margin-top: 20px; display: none; }
-        .report-table th, .report-table td, .criteria-table th, .criteria-table td { border: 1px solid #333; padding: 12px; text-align: center; }
-        .report-table th { background: #2c3e50; color: white; }
-        .criteria-table th { background: #f8f9fa; color: #333; font-size: 0.9em; }
-        .status-tag { padding: 6px 12px; border-radius: 4px; color: white; font-weight: bold; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ตัวคำนวณการกระจุกตัวตลาด (Market Concentration Calculator)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #174ea6;
+      --accent: #0f9d58;
+      --danger: #d93025;
+      --warning: #f9ab00;
+      --card: #ffffff;
+      --line: #d9e2f1;
+      --bg: #f4f7fb;
+      --text: #1f2937;
+    }
 
-        /* ส่วนเกณฑ์การคำนวณ (แสดงหลังคำนวณ) */
-        #standardSection { display: none; margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px; }
-        .section-title { color: #2c3e50; border-left: 5px solid #2c3e50; padding-left: 10px; margin-bottom: 15px; font-weight: bold; }
+    * { box-sizing: border-box; }
 
-        #chartWrapper { width: 100%; display: none; justify-content: center; margin: 30px 0; }
-        canvas { max-width: 450px !important; max-height: 450px !important; }
-    </style>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Sarabun", sans-serif;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(16, 24, 40, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.7rem;
+      color: var(--primary);
+    }
+
+    .subtitle {
+      margin: 0 0 20px;
+      color: #4b5563;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    input, select, button {
+      width: 100%;
+      border: 1px solid #c7d2e6;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 0.96rem;
+    }
+
+    .stock-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1.4fr 1fr auto;
+      margin-bottom: 10px;
+      align-items: end;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      font-weight: 700;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-secondary { background: #eef3fb; }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-danger { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }
+
+    .results {
+      margin-top: 22px;
+      display: none;
+      gap: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      font-size: 0.95rem;
+      vertical-align: top;
+    }
+
+    th { background: #eef3fb; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 0.87rem;
+      font-weight: 700;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .chart-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+      min-height: 280px;
+    }
+
+    .analysis {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fbff;
+      padding: 14px;
+      line-height: 1.6;
+    }
+
+    .hint {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>โปรแกรมคำนวณการผูกขาด/การกระจุกตัวตลาด</h1>
+    <p class="subtitle">รองรับหุ้นไทยและหุ้นโลก พร้อมตัวชี้วัดเศรษฐศาสตร์: HHI, CR4, ส่วนแบ่งผู้นำตลาด และจำนวนผู้เล่นเชิงประสิทธิผล</p>
 
-<div class="container" id="pdfArea">
-    <div style="text-align:center;">
-        <h2 style="margin-bottom:5px;">รายงานการวิเคราะห์ระดับการผูกขาดในอุตสาหกรรม</h2>
-        <p id="subHeader" style="color: #666;">Market Concentration Analysis Report</p>
-    </div>
-
-    <!-- ส่วนกรอกข้อมูล -->
-    <div class="input-card" id="formPanel">
-        <div class="row">
-            <input type="text" id="industry" placeholder="ระบุอุตสาหกรรม">
-            <select id="geo">
-                <option value="ประเทศไทย">ประเทศไทย</option>
-                <option value="มาตรฐานสากล">มาตรฐานสากล (US DOJ/FTC)</option>
-            </select>
+    <section>
+      <div class="grid">
+        <div>
+          <label for="industry">กลุ่มอุตสาหกรรม</label>
+          <select id="industry">
+            <option value="Telecom">โทรคมนาคมและสื่อสาร (Telecom)</option>
+            <option value="Banking">ธนาคาร (Banking)</option>
+            <option value="Energy">พลังงาน (Energy)</option>
+            <option value="Technology">เทคโนโลยี (Technology)</option>
+            <option value="Healthcare">สุขภาพ (Healthcare)</option>
+            <option value="Consumer">สินค้าอุปโภคบริโภค (Consumer)</option>
+          </select>
         </div>
-        <div id="stockList">
-            <div class="row">
-                <input type="text" class="comp-n" placeholder="ชื่อบริษัท">
-                <input type="number" class="comp-s" placeholder="Market Share (%)">
-            </div>
-            <div class="row">
-                <input type="text" class="comp-n" placeholder="ชื่อบริษัท">
-                <input type="number" class="comp-s" placeholder="Market Share (%)">
-            </div>
+        <div>
+          <label for="marketScope">ขอบเขตตลาด</label>
+          <select id="marketScope">
+            <option value="Thailand">ตลาดหุ้นไทย (SET/mai)</option>
+            <option value="Global">ตลาดหุ้นโลก (Global)</option>
+            <option value="Mixed">ผสมไทย + โลก (Mixed)</option>
+          </select>
         </div>
-        <button class="btn-add" onclick="addRow()">+ เพิ่มรายชื่อ</button>
-        <button class="btn-calc" onclick="calculate()">คำนวณผลลัพธ์</button>
-    </div>
+      </div>
 
-    <!-- ตารางสรุปผลลัพธ์ -->
-    <table class="report-table" id="resTable">
+      <h3>รายชื่อบริษัทและส่วนแบ่งตลาด (%)</h3>
+      <div id="stockRows"></div>
+      <div class="actions">
+        <button class="btn-secondary" id="addRowBtn" type="button">+ เพิ่มบริษัท</button>
+        <button class="btn-primary" id="calculateBtn" type="button">คำนวณการผูกขาดตลาด</button>
+        <button class="btn-danger" id="resetBtn" type="button">Reset ข้อมูล</button>
+      </div>
+      <p class="hint">หมายเหตุ: ผลรวมส่วนแบ่งตลาดควรใกล้เคียง 100% เพื่อสะท้อนโครงสร้างตลาดจริง</p>
+    </section>
+
+    <section id="results" class="results">
+      <table>
         <thead>
-            <tr>
-                <th>วิธีคำนวณ</th>
-                <th>ค่าที่คำนวณได้</th>
-                <th>สรุปผลการกระจุกตัว</th>
-            </tr>
+          <tr>
+            <th style="width: 25%;">ตัวชี้วัด</th>
+            <th style="width: 20%;">ค่า</th>
+            <th style="width: 25%;">ระดับ</th>
+            <th>ความหมายเชิงเศรษฐศาสตร์</th>
+          </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td><b>Herfindahl-Hirschman (HHI)</b></td>
-                <td><span id="hhiVal" style="font-size: 1.2em; font-weight: bold;"></span></td>
-                <td><span id="hhiTag" class="status-tag"></span></td>
-            </tr>
-            <tr>
-                <td><b>Concentration Ratio (CR2)</b></td>
-                <td><span id="crVal" style="font-size: 1.2em; font-weight: bold;"></span> %</td>
-                <td><span id="crTag" class="status-tag"></span></td>
-            </tr>
-        </tbody>
-    </table>
+        <tbody id="statsBody"></tbody>
+      </table>
 
-    <!-- ส่วนแสดงกราฟ -->
-    <div id="chartWrapper">
-        <canvas id="marketChart"></canvas>
-    </div>
+      <div class="charts">
+        <div class="chart-card">
+          <canvas id="pieChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
 
-    <!-- ส่วนเกณฑ์การคำนวณ (แสดงหลังกดคำนวณ) -->
-    <div id="standardSection">
-        <div class="section-title">เกณฑ์มาตรฐานในการอ้างอิง (Reference Standards)</div>
-        <table class="criteria-table" style="display: table;">
-            <thead>
-                <tr>
-                    <th>ดัชนี</th>
-                    <th>ช่วงค่า</th>
-                    <th>ความหมายทางการตลาด</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td rowspan="3"><b>HHI</b></td>
-                    <td>น้อยกว่า 1,500</td>
-                    <td style="color: green;">การแข่งขันสูง (Unconcentrated)</td>
-                </tr>
-                <tr>
-                    <td>1,500 - 2,500</td>
-                    <td style="color: #d68910;">กระจุกตัวปานกลาง (Moderate)</td>
-                </tr>
-                <tr>
-                    <td>มากกว่า 2,500</td>
-                    <td style="color: red;">กระจุกตัวสูงมาก (Highly Concentrated)</td>
-                </tr>
-                <tr>
-                    <td rowspan="2"><b>CR2</b></td>
-                    <td>น้อยกว่า 40%</td>
-                    <td style="color: green;">ตลาดมีการแข่งขันปกติ</td>
-                </tr>
-                <tr>
-                    <td>75% ขึ้นไป</td>
-                    <td style="color: red;">ตลาดมีผู้ขายน้อยราย (เสี่ยงผูกขาด)</td>
-                </tr>
-            </tbody>
-        </table>
-        <p style="font-size: 11px; color: #7f8c8d; margin-top: 10px;">
-            *อ้างอิงเกณฑ์จาก Department of Justice (DOJ) และ Federal Trade Commission (FTC) ของสหรัฐอเมริกา และ พ.ร.บ. การแข่งขันทางการค้าของไทย
-        </p>
-    </div>
-</div>
+      <div class="analysis" id="analysisBox"></div>
+    </section>
+  </div>
 
-<div style="max-width: 900px; margin: 15px auto;">
-    <button id="pdfBtn" style="display:none; background:#c0392b; color:white; width:100%; margin-bottom:10px;" onclick="exportPDF()">ดาวน์โหลดรายงาน PDF</button>
-    <button style="background:#7f8c8d; color:white; width:100%;" onclick="location.reload()">ล้างข้อมูล/เริ่มใหม่</button>
-</div>
+  <datalist id="thaiStocks">
+    <option value="TRUE - True Corporation"></option>
+    <option value="ADVANC - Advanced Info Service"></option>
+    <option value="DTAC - Total Access Communication"></option>
+    <option value="INTUCH - Intouch Holdings"></option>
+    <option value="PTT - PTT Public Company"></option>
+    <option value="AOT - Airports of Thailand"></option>
+    <option value="CPALL - CP All"></option>
+    <option value="KBANK - Kasikornbank"></option>
+    <option value="SCB - SCB X"></option>
+    <option value="BDMS - Bangkok Dusit Medical Services"></option>
+  </datalist>
 
-<script>
-    let chartObj = null;
+  <datalist id="globalStocks">
+    <option value="T - AT&T"></option>
+    <option value="VZ - Verizon"></option>
+    <option value="TMUS - T-Mobile US"></option>
+    <option value="CHTR - Charter Communications"></option>
+    <option value="CMCSA - Comcast"></option>
+    <option value="AAPL - Apple"></option>
+    <option value="MSFT - Microsoft"></option>
+    <option value="GOOGL - Alphabet"></option>
+    <option value="AMZN - Amazon"></option>
+    <option value="META - Meta Platforms"></option>
+  </datalist>
 
-    function addRow() {
-        const d = document.createElement('div');
-        d.className = 'row';
-        d.innerHTML = `<input type="text" class="comp-n" placeholder="ชื่อบริษัท"><input type="number" class="comp-s" placeholder="Market Share (%)">`;
-        document.getElementById('stockList').appendChild(d);
+  <script>
+    const stockRows = document.getElementById("stockRows");
+    const marketScope = document.getElementById("marketScope");
+    const resultsSection = document.getElementById("results");
+
+    let pieChart;
+    let barChart;
+
+    function createStockRow(defaultName = "", defaultShare = "") {
+      const wrapper = document.createElement("div");
+      wrapper.className = "stock-row";
+
+      wrapper.innerHTML = `
+        <div>
+          <label>ชื่อหุ้น/บริษัท</label>
+          <input type="text" class="stock-name" placeholder="เช่น TRUE - True Corporation" value="${defaultName}" />
+        </div>
+        <div>
+          <label>ส่วนแบ่งตลาด (%)</label>
+          <input type="number" class="stock-share" min="0" max="100" step="0.01" value="${defaultShare}" />
+        </div>
+        <button type="button" class="btn-danger remove-row">ลบ</button>
+      `;
+
+      wrapper.querySelector(".remove-row").addEventListener("click", () => {
+        if (stockRows.children.length > 2) {
+          wrapper.remove();
+        }
+      });
+
+      stockRows.appendChild(wrapper);
+      applyDatalist();
+    }
+
+    function applyDatalist() {
+      const listId = marketScope.value === "Thailand" ? "thaiStocks" : marketScope.value === "Global" ? "globalStocks" : "thaiStocks";
+      document.querySelectorAll(".stock-name").forEach((input) => {
+        input.setAttribute("list", listId);
+      });
+    }
+
+    function classifyHHI(hhi) {
+      if (hhi < 1500) return { level: "แข่งขันสูง", color: "#0f9d58", meaning: "ตลาดกระจายตัว ผู้เล่นหลายรายแข่งขันกันมาก โอกาสใช้อำนาจตลาดต่ำ" };
+      if (hhi <= 2500) return { level: "กระจุกตัวปานกลาง", color: "#f9ab00", meaning: "มีการกระจุกตัวบางส่วน บริษัทใหญ่เริ่มมีอำนาจตั้งราคา" };
+      return { level: "กระจุกตัวสูง", color: "#d93025", meaning: "ใกล้โครงสร้างผู้ขายน้อยราย/เสี่ยงผูกขาด ควรติดตามด้านการแข่งขัน" };
+    }
+
+    function classifyCR4(cr4) {
+      if (cr4 < 40) return { level: "ต่ำ", color: "#0f9d58", meaning: "4 บริษัทใหญ่รวมกันยังครองตลาดไม่มาก" };
+      if (cr4 < 75) return { level: "ปานกลาง", color: "#f9ab00", meaning: "4 บริษัทใหญ่เริ่มมีบทบาทนำตลาด" };
+      return { level: "สูงมาก", color: "#d93025", meaning: "ตลาดกระจุกตัวที่ผู้เล่นรายใหญ่ไม่กี่ราย" };
+    }
+
+    function badge(text, color) {
+      return `<span class="badge" style="background:${color}">${text}</span>`;
     }
 
     function calculate() {
-        const names = Array.from(document.querySelectorAll('.comp-n')).map(x => x.value || 'N/A');
-        const shares = Array.from(document.querySelectorAll('.comp-s')).map(x => parseFloat(x.value) || 0);
-        
-        // คำนวณ HHI และ CR2
-        const hhi = shares.reduce((sum, s) => sum + (s * s), 0);
-        const sorted = [...shares].sort((a, b) => b - a);
-        const cr2 = (sorted[0] || 0) + (sorted[1] || 0);
+      const names = Array.from(document.querySelectorAll(".stock-name")).map((el, idx) => el.value.trim() || `บริษัท ${idx + 1}`);
+      const shares = Array.from(document.querySelectorAll(".stock-share")).map((el) => Number(el.value) || 0);
 
-        // แสดงผลตารางและส่วนหัว
-        document.getElementById('subHeader').innerHTML = `อุตสาหกรรม: <b>${document.getElementById('industry').value || '-'}</b> | พื้นที่: <b>${document.getElementById('geo').value}</b>`;
-        document.getElementById('hhiVal').innerText = Math.round(hhi).toLocaleString();
-        document.getElementById('crVal').innerText = cr2.toFixed(2);
-        
-        document.getElementById('resTable').style.display = 'table';
-        document.getElementById('standardSection').style.display = 'block';
-        document.getElementById('pdfBtn').style.display = 'block';
+      const total = shares.reduce((a, b) => a + b, 0);
+      if (total <= 0) {
+        alert("กรุณากรอกส่วนแบ่งตลาดอย่างน้อย 1 บริษัท");
+        return;
+      }
 
-        // ปรับสีสถานะ
-        setLabel('hhiTag', hhi, 1500, 2500, ["แข่งขันสูง", "ปานกลาง", "กระจุกตัวสูง"]);
-        setLabel('crTag', cr2, 40, 75, ["ปกติ", "ปานกลาง", "สูงมาก"]);
+      const normalized = shares.map((s) => (s / total) * 100);
+      const sorted = [...normalized].sort((a, b) => b - a);
 
-        // แสดงกราฟ (Force display ก่อน)
-        const wrapper = document.getElementById('chartWrapper');
-        wrapper.style.display = 'flex';
-        
-        setTimeout(() => { drawPie(names, shares); }, 150);
+      const hhi = normalized.reduce((sum, s) => sum + s * s, 0);
+      const cr4 = sorted.slice(0, 4).reduce((a, b) => a + b, 0);
+      const leaderShare = sorted[0] || 0;
+      const effectiveFirms = 10000 / hhi;
+
+      const hhiClass = classifyHHI(hhi);
+      const cr4Class = classifyCR4(cr4);
+
+      const stats = [
+        {
+          name: "HHI (Herfindahl-Hirschman Index)",
+          value: hhi.toFixed(2),
+          level: badge(hhiClass.level, hhiClass.color),
+          meaning: hhiClass.meaning
+        },
+        {
+          name: "CR4 (4 บริษัทใหญ่สุด)",
+          value: `${cr4.toFixed(2)}%`,
+          level: badge(cr4Class.level, cr4Class.color),
+          meaning: cr4Class.meaning
+        },
+        {
+          name: "Leader Share",
+          value: `${leaderShare.toFixed(2)}%`,
+          level: badge(leaderShare >= 50 ? "ผู้นำเด่นชัด" : "ไม่เด่นชัด", leaderShare >= 50 ? "#d93025" : "#0f9d58"),
+          meaning: "วัดความสามารถของบริษัทอันดับ 1 ในการครองส่วนแบ่งตลาด"
+        },
+        {
+          name: "Effective Number of Firms",
+          value: effectiveFirms.toFixed(2),
+          level: badge(effectiveFirms < 3 ? "น้อยราย", effectiveFirms < 3 ? "#d93025" : "#0f9d58"),
+          meaning: "จำนวนผู้เล่นเชิงประสิทธิผล (ค่ายิ่งต่ำ ตลาดยิ่งกระจุกตัว)"
+        }
+      ];
+
+      document.getElementById("statsBody").innerHTML = stats
+        .map((s) => `<tr><td>${s.name}</td><td>${s.value}</td><td>${s.level}</td><td>${s.meaning}</td></tr>`)
+        .join("");
+
+      const dominantText = hhi > 2500 || cr4 >= 75
+        ? "โครงสร้างตลาดมีแนวโน้มเป็นผู้ขายน้อยราย (Oligopoly) หรือกึ่งผูกขาด"
+        : "โครงสร้างตลาดยังมีการแข่งขันพอสมควร";
+
+      document.getElementById("analysisBox").innerHTML = `
+        <strong>บทวิเคราะห์เชิงเศรษฐศาสตร์:</strong><br>
+        อุตสาหกรรม: <strong>${document.getElementById("industry").selectedOptions[0].text}</strong><br>
+        ขอบเขตข้อมูล: <strong>${marketScope.selectedOptions[0].text}</strong><br>
+        ผลรวมส่วนแบ่งตลาดที่ป้อน: <strong>${total.toFixed(2)}%</strong> (ระบบทำ normalization อัตโนมัติ)<br>
+        สรุป: <strong>${dominantText}</strong><br>
+        ข้อเสนอเชิงนโยบาย: หากดัชนีสูงต่อเนื่อง ควรติดตามพฤติกรรมราคา การควบรวมกิจการ และอุปสรรคการเข้าสู่ตลาด
+      `;
+
+      renderCharts(names, normalized);
+      resultsSection.style.display = "grid";
     }
 
-    function setLabel(id, val, low, high, labels) {
-        const el = document.getElementById(id);
-        if (val < low) { el.innerText = labels[0]; el.style.background = "#27ae60"; }
-        else if (val <= high) { el.innerText = labels[1]; el.style.background = "#f39c12"; }
-        else { el.innerText = labels[2]; el.style.background = "#e74c3c"; }
+    function renderCharts(labels, values) {
+      if (pieChart) pieChart.destroy();
+      if (barChart) barChart.destroy();
+
+      pieChart = new Chart(document.getElementById("pieChart"), {
+        type: "pie",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ["#174ea6", "#0f9d58", "#d93025", "#f9ab00", "#9334e6", "#00acc1", "#fb8c00", "#5f6368"]
+          }]
+        },
+        options: {
+          plugins: {
+            title: { display: true, text: "สัดส่วนส่วนแบ่งตลาด (%)" },
+            legend: { position: "bottom" }
+          }
+        }
+      });
+
+      barChart = new Chart(document.getElementById("barChart"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Market Share (%)",
+            data: values,
+            backgroundColor: "rgba(23,78,166,0.75)",
+            borderColor: "#174ea6",
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: { y: { beginAtZero: true, max: 100 } },
+          plugins: { title: { display: true, text: "เปรียบเทียบส่วนแบ่งตลาด" } }
+        }
+      });
     }
 
-    function drawPie(labels, data) {
-        const ctx = document.getElementById('marketChart').getContext('2d');
-        if (chartObj) chartObj.destroy();
-        chartObj = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: ['#3498db', '#e74c3c', '#f1c40f', '#2ecc71', '#9b59b6', '#34495e']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
+    function resetAll() {
+      document.getElementById("industry").selectedIndex = 0;
+      document.getElementById("marketScope").selectedIndex = 0;
+      stockRows.innerHTML = "";
+      createStockRow("TRUE - True Corporation", "45");
+      createStockRow("ADVANC - Advanced Info Service", "35");
+      createStockRow("DTAC - Total Access Communication", "20");
+      resultsSection.style.display = "none";
+      if (pieChart) pieChart.destroy();
+      if (barChart) barChart.destroy();
     }
 
-    function exportPDF() {
-        document.getElementById('formPanel').style.display = 'none';
-        const element = document.getElementById('pdfArea');
-        html2pdf().set({
-            margin: 10,
-            filename: 'Market_Concentration_Report.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(element).save().then(() => {
-            document.getElementById('formPanel').style.display = 'block';
-        });
-    }
-</script>
+    document.getElementById("addRowBtn").addEventListener("click", () => createStockRow());
+    document.getElementById("calculateBtn").addEventListener("click", calculate);
+    document.getElementById("resetBtn").addEventListener("click", resetAll);
+    marketScope.addEventListener("change", applyDatalist);
 
+    resetAll();
+  </script>
 </body>
 </html>
